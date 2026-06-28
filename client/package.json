@@ -1,0 +1,33 @@
+{
+  "name": "chat-app-client",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "react-router-dom": "^6.20.0",
+    "firebase": "^10.7.0",
+    "socket.io-client": "^4.7.2",
+    "zustand": "^4.4.7",
+    "axios": "^1.6.2",
+    "date-fns": "^2.30.0",
+    "react-hot-toast": "^2.4.1",
+    "emoji-picker-react": "^4.5.16",
+    "react-dropzone": "^14.2.3",
+    "react-intersection-observer": "^9.5.3",
+    "@headlessui/react": "^1.7.17",
+    "simple-peer": "^9.11.1",
+    "react-use-measure": "^2.1.1",
+    "lucide-react": "^0.294.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "proxy": "http://localhost:5001",
+  "browserslist": {
+    "production": [">0.2%", "not dead"],
+    "development": ["last 1 chrome version"]
+  }
+}
