@@ -62,11 +62,17 @@ const useVideoCall = (socket) => {
         audio: true 
       });
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
       setRemoteUid(targetUid);
       setCallState("calling");
-      
+
+      // Small delay to ensure the Video component is rendered and the ref is ready
+      setTimeout(() => {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+      }, 150);
+
       socket?.emit("call:initiate", { 
         targetUid, 
         callType: withVideo ? "video" : "audio",
@@ -118,12 +124,18 @@ const useVideoCall = (socket) => {
         audio: true 
       });
       localStreamRef.current = stream;
-      if (localVideoRef.current) localVideoRef.current.srcObject = stream;
 
       setRemoteUid(fromUid);
       setCallId(newCallId);
       setIncomingCall(null);
       setCallState("connected");
+
+      // Small delay to ensure the Video component is rendered and the ref is ready
+      setTimeout(() => {
+        if (localVideoRef.current) {
+          localVideoRef.current.srcObject = stream;
+        }
+      }, 150);
 
       socket?.emit("call:accept", { targetUid: fromUid, callId: newCallId });
     } catch (err) {
