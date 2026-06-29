@@ -52,8 +52,15 @@ export const requestNotificationPermission = async () => {
       // Ensure service worker is ready before getting token
       const registration = await navigator.serviceWorker.ready;
       const vKey = cleanEnv(process.env.REACT_APP_FIREBASE_VAPID_KEY);
-      console.log("Using VAPID Key:", vKey);
 
+      console.log(`FCM: Using VAPID Key (Length: ${vKey?.length || 0})`);
+
+      if (!vKey || vKey.length < 50) {
+        console.error("VAPID key is too short or missing. Current length:", vKey?.length || 0);
+        return null;
+      }
+
+      console.log("Requesting FCM token...");
       const token = await getToken(messaging, {
         vapidKey: vKey,
         serviceWorkerRegistration: registration

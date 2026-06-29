@@ -30,9 +30,20 @@ function App() {
     if (user && auth.currentUser) {
       const registerFCM = async () => {
         try {
+          // FORCE CLEANUP: Unregister old service workers to clear the 'InvalidAccessError'
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let reg of registrations) {
+              await reg.unregister();
+              console.log("Old Service Worker unregistered");
+            }
+            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+          }
+
           const fcmToken = await requestNotificationPermission();
           if (fcmToken) {
             await api.post("/auth/fcm-token", { fcmToken });
+            console.log("FCM Token synchronized successfully");
           }
         } catch (err) {
           console.error("FCM registration process error:", err);
