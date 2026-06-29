@@ -30,18 +30,12 @@ function App() {
     if (user && auth.currentUser) {
       const registerFCM = async () => {
         try {
-          // Register Service Worker for FCM
-          if ('serviceWorker' in navigator) {
-            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-          }
-
           const fcmToken = await requestNotificationPermission();
           if (fcmToken) {
             await api.post("/auth/fcm-token", { fcmToken });
-            console.log("FCM Token registered successfully");
           }
         } catch (err) {
-          console.error("FCM registration error:", err);
+          console.error("FCM registration process error:", err);
         }
       };
       registerFCM();

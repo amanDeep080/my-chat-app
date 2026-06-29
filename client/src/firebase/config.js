@@ -40,10 +40,23 @@ export { messaging };
 
 export const requestNotificationPermission = async () => {
   try {
+    if (!("Notification" in window)) {
+      console.warn("This browser does not support notifications.");
+      return null;
+    }
+
     const permission = await Notification.requestPermission();
+    console.log("Notification permission status:", permission);
+
     if (permission === "granted" && messaging) {
+      // Ensure service worker is ready before getting token
+      const registration = await navigator.serviceWorker.ready;
+      const vKey = cleanEnv(process.env.REACT_APP_FIREBASE_VAPID_KEY);
+      console.log("Using VAPID Key:", vKey);
+
       const token = await getToken(messaging, {
-        vapidKey: process.env.REACT_APP_FIREBASE_VAPID_KEY,
+        vapidKey: vKey,
+        serviceWorkerRegistration: registration
       });
       return token;
     }

@@ -12,8 +12,9 @@ const transporter = nodemailer.createTransport({
 // Push notification via FCM
 const sendPushNotification = async (fcmToken, { title, body, data = {} }) => {
   try {
+    console.log(`Sending FCM to token: ${fcmToken.substring(0, 10)}...`);
     const messaging = getMessaging();
-    await messaging.send({
+    const response = await messaging.send({
       token: fcmToken,
       notification: { title, body },
       data: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v)])),
@@ -27,6 +28,7 @@ const sendPushNotification = async (fcmToken, { title, body, data = {} }) => {
         },
       },
     });
+    console.log("FCM Sent successfully:", response);
   } catch (error) {
     console.error("FCM error:", error.message);
   }
