@@ -24,7 +24,7 @@ const ProtectedRoute = ({ children }) => {
 };
 
 function App() {
-  const { setUser, setToken, setLoading } = useAuthStore();
+  const { user, setUser, setToken, setLoading } = useAuthStore();
 
   useEffect(() => {
     if (user && auth.currentUser) {
