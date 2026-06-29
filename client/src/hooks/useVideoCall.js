@@ -49,8 +49,10 @@ const useVideoCall = (socket) => {
     };
 
     pc.onconnectionstatechange = () => {
+      console.log("Connection state changed:", pc.connectionState);
       if (["disconnected", "failed", "closed"].includes(pc.connectionState)) {
-        endCall();
+        // Only end the call if it's actually been failed for a bit
+        console.warn("WebRTC connection lost or failed. Attempting to keep UI alive...");
       }
     };
 
@@ -180,6 +182,15 @@ const useVideoCall = (socket) => {
     });
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
+
+    // Process queued ICE candidates
+    if (pc._iceQueue) {
+      pc._iceQueue.forEach(candidate => {
+        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error("Error adding queued ICE:", e));
+      });
+      pc._iceQueue = [];
+    }
+
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
 
@@ -194,6 +205,15 @@ const useVideoCall = (socket) => {
         await peerConnectionRef.current.setRemoteDescription(
           new RTCSessionDescription(answer)
         );
+
+        // Process queued ICE candidates
+        const pc = peerConnectionRef.current;
+        if (pc._iceQueue) {
+          pc._iceQueue.forEach(candidate => {
+            pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error("Error adding queued ICE:", e));
+          });
+          pc._iceQueue = [];
+        }
       }
     } catch (err) {
       console.error("Answer handling error:", err);
@@ -204,7 +224,14 @@ const useVideoCall = (socket) => {
     const { candidate } = data;
     try {
       if (peerConnectionRef.current) {
-        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        // Wait for remote description before adding ICE candidates
+        if (peerConnectionRef.current.remoteDescription) {
+          await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } else {
+          // Queue the candidate if remote description isn't set yet
+          if (!peerConnectionRef.current._iceQueue) peerConnectionRef.current._iceQueue = [];
+          peerConnectionRef.current._iceQueue.push(candidate);
+        }
       }
     } catch (err) {
       console.error("ICE candidate error:", err);
