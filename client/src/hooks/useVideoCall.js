@@ -32,7 +32,8 @@ const useVideoCall = (socket) => {
 
     pc.onicecandidate = ({ candidate }) => {
       if (candidate && remoteUid) {
-        socket?.emit("call:ice_candidate", { 
+        console.log("Sending ICE candidate to:", remoteUid);
+        socket?.emit("call:ice_candidate", {
           targetUid: remoteUid, 
           candidate,
           callId: callId || pc.callId,
@@ -41,6 +42,7 @@ const useVideoCall = (socket) => {
     };
 
     pc.ontrack = ({ streams }) => {
+      console.log("Remote track received:", streams[0]);
       if (remoteVideoRef.current) {
         remoteVideoRef.current.srcObject = streams[0];
       }
@@ -85,23 +87,28 @@ const useVideoCall = (socket) => {
   }, [socket]);
 
   const handleCallAccepted = useCallback(async (data) => {
-    const { callId: newCallId } = data;
+    const { callId: newCallId, from } = data; // 'from' is the person who accepted
+    const actualRemoteUid = from || remoteUid;
+
     setCallId(newCallId);
     setCallState("connected");
 
+    console.log("Peer connection starting for call:", newCallId, "with", actualRemoteUid);
     const pc = createPeerConnection();
     pc.callId = newCallId;
     peerConnectionRef.current = pc;
 
-    localStreamRef.current?.getTracks().forEach((track) => {
-      pc.addTrack(track, localStreamRef.current);
-    });
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => {
+        pc.addTrack(track, localStreamRef.current);
+      });
+    }
 
     const offer = await pc.createOffer();
     await pc.setLocalDescription(offer);
 
     socket?.emit("call:offer", {
-      targetUid: remoteUid,
+      targetUid: actualRemoteUid,
       offer,
       callId: newCallId
     });
@@ -149,9 +156,24 @@ const useVideoCall = (socket) => {
     const { offer, callId: newCallId, from } = data;
     const fromUid = typeof from === 'object' ? from.uid : from;
 
+    console.log("Handling offer from:", fromUid);
     const pc = createPeerConnection();
     pc.callId = newCallId;
     peerConnectionRef.current = pc;
+
+    // We must have the local stream ready before adding tracks
+    if (!localStreamRef.current) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true
+        });
+        localStreamRef.current = stream;
+        if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+      } catch (e) {
+        console.error("Failed to get local stream for offer:", e);
+      }
+    }
 
     localStreamRef.current?.getTracks().forEach((track) => {
       pc.addTrack(track, localStreamRef.current);
@@ -266,18 +288,36 @@ const useVideoCall = (socket) => {
   useEffect(() => {
     if (!socket) return;
     socket.on("call:incoming", (data) => {
+      console.log("Incoming call data:", data);
       setIncomingCall(data);
       setCallState("ringing");
     });
-    socket.on("call:accepted", handleCallAccepted);
-    socket.on("call:offer", handleOffer);
-    socket.on("call:answer", handleAnswer);
-    socket.on("call:ice_candidate", handleIceCandidate);
-    socket.on("call:rejected", () => {
+    socket.on("call:accepted", (data) => {
+      console.log("Call accepted by remote:", data);
+      handleCallAccepted(data);
+    });
+    socket.on("call:offer", (data) => {
+      console.log("Offer received:", data);
+      handleOffer(data);
+    });
+    socket.on("call:answer", (data) => {
+      console.log("Answer received:", data);
+      handleAnswer(data);
+    });
+    socket.on("call:ice_candidate", (data) => {
+      console.log("ICE candidate received:", data);
+      handleIceCandidate(data);
+    });
+    socket.on("call:rejected", (data) => {
+      console.log("Call rejected by remote:", data);
       setCallState("idle");
       setRemoteUid(null);
+      setIncomingCall(null);
     });
-    socket.on("call:ended", endCall);
+    socket.on("call:ended", (data) => {
+      console.log("Call ended by remote:", data);
+      endCall();
+    });
 
     return () => {
       socket.off("call:incoming");
