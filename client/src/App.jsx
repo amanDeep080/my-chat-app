@@ -54,6 +54,8 @@ function App() {
       // Listen for foreground notifications
       const unsub = onForegroundMessage((payload) => {
         console.log("Foreground message received:", payload);
+
+        // 1. Show the In-App Toast
         toast((t) => (
           <div onClick={() => {
             if (payload.data?.roomId) window.location.href = `/room/${payload.data.roomId}`;
@@ -63,6 +65,14 @@ function App() {
             <div style={{ fontSize: "12px" }}>{payload.notification?.body || ""}</div>
           </div>
         ), { duration: 5000, icon: "🔔" });
+
+        // 2. Trigger a System-Level Notification
+        if (Notification.permission === "granted") {
+          new Notification(payload.notification?.title || "New Message", {
+            body: payload.notification?.body || "",
+            icon: "/logo192.png",
+          });
+        }
       });
 
       return () => unsub?.();
