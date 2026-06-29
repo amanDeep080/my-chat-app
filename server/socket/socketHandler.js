@@ -133,6 +133,24 @@ const initSocket = (io) => {
           updatedAt: new Date(),
         });
 
+        // Push notifications
+        const roomDoc = await db.collection("rooms").doc(roomId).get();
+        if (roomDoc.exists) {
+          const room = roomDoc.data();
+          const isDM = room.type === "dm" || room.isDM;
+
+          if (isDM) {
+            const otherUid = room.memberIds.find(id => id !== uid);
+            if (otherUid) {
+              await sendNotificationToUser(otherUid, {
+                title: socket.userName,
+                body: type === "text" ? content : `Sent a ${type}`,
+                data: { roomId, type: "message" }
+              });
+            }
+          }
+        }
+
         // Push notifications for mentions
         const mentions = content.match(/@(\w+)/g) || [];
         if (mentions.length > 0) {
@@ -240,23 +258,31 @@ const initSocket = (io) => {
 
     // ── WebRTC Signaling (Video/Audio Calls) ─────────────────────
     // Initiate call
-    socket.on("call:initiate", ({ targetUid, callType = "video", roomId }) => {
-      const targetSocket = connectedUsers.get(targetUid);
-      if (targetSocket) {
-        const callId = `${[uid, targetUid].sort().join("_")}_${Date.now()}`;
-        socket.callId = callId;
-        io.to(targetSocket).emit("call:incoming", {
-          from: {
-            uid: uid,
-            name: socket.userName,
-          },
-          callType,
-          roomId,
-          callId,
-        });
-      } else {
-        socket.emit("call:rejected", { reason: "User offline" });
+    socket.on("call:initiate", async ({ targetUid, callType = "video", roomId }) => {
+      const targetSocketId = connectedUsers.get(targetUid);
+      const callId = `${[uid, targetUid].sort().join("_")}_${Date.now()}`;
+      socket.callId = callId;
+
+      const callData = {
+        from: {
+          uid: uid,
+          name: socket.userName,
+        },
+        callType,
+        roomId,
+        callId,
+      };
+
+      if (targetSocketId) {
+        io.to(targetSocketId).emit("call:incoming", callData);
       }
+
+      // Always try to send push notification for calls
+      await sendNotificationToUser(targetUid, {
+        title: `Incoming ${callType} call`,
+        body: `${socket.userName} is calling you`,
+        data: { ...callData, type: "call" },
+      });
     });
 
 
@@ -376,6 +402,21 @@ const initSocket = (io) => {
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
+async function sendNotificationToUser(targetUid, notification) {
+  try {
+    const db = getDb();
+    const userDoc = await db.collection("users").doc(targetUid).get();
+    if (userDoc.exists) {
+      const user = userDoc.data();
+      if (user.fcmToken) {
+        await sendPushNotification(user.fcmToken, notification);
+      }
+    }
+  } catch (err) {
+    console.error("Failed to send notification:", err);
+  }
+}
+
 async function notifyMentions(mentions, message, roomId) {
   const db = getDb();
   for (const mention of mentions) {

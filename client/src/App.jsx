@@ -8,6 +8,8 @@ import { ThemeProvider } from "./context/ThemeContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import useAuthStore from "./store/authStore";
 import api from "./utils/api";
+import { requestNotificationPermission, onForegroundMessage } from "./firebase/config";
+import toast from "react-hot-toast";
 
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -23,6 +25,44 @@ const ProtectedRoute = ({ children }) => {
 
 function App() {
   const { setUser, setToken, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    if (user && auth.currentUser) {
+      const registerFCM = async () => {
+        try {
+          // Register Service Worker for FCM
+          if ('serviceWorker' in navigator) {
+            await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+          }
+
+          const fcmToken = await requestNotificationPermission();
+          if (fcmToken) {
+            await api.post("/auth/fcm-token", { fcmToken });
+            console.log("FCM Token registered successfully");
+          }
+        } catch (err) {
+          console.error("FCM registration error:", err);
+        }
+      };
+      registerFCM();
+
+      // Listen for foreground notifications
+      const unsub = onForegroundMessage((payload) => {
+        console.log("Foreground message received:", payload);
+        toast((t) => (
+          <div onClick={() => {
+            if (payload.data?.roomId) window.location.href = `/room/${payload.data.roomId}`;
+            toast.dismiss(t.id);
+          }} style={{ cursor: "pointer" }}>
+            <b>{payload.notification?.title || "New Message"}</b>
+            <div style={{ fontSize: "12px" }}>{payload.notification?.body || ""}</div>
+          </div>
+        ), { duration: 5000, icon: "🔔" });
+      });
+
+      return () => unsub?.();
+    }
+  }, [user]);
 
   useEffect(() => {
     setLoading(true);
