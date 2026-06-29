@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 
 const STATUS_COLORS = { online: "#22c55e", away: "#f59e0b", busy: "#ef4444", offline: "#64748b" };
 
-const RightPanel = ({ room, panel }) => {
+const RightPanel = ({ room, panel, onStartCall }) => {
   const { setRightPanel, onlineUsers, setActiveRoom } = useChatStore();
   const { user: currentUser } = useAuthStore();
 
@@ -61,7 +61,7 @@ const RightPanel = ({ room, panel }) => {
 
   return (
     <div style={{
-      width: 280, background: "var(--bg-main)", borderLeft: "1px solid var(--border)",
+      width: "100%", background: "var(--bg-main)", borderLeft: "1px solid var(--border)",
       display: "flex", flexDirection: "column", height: "100vh",
     }}>
       {/* Header */}
@@ -267,7 +267,7 @@ const RightPanel = ({ room, panel }) => {
 
         {/* CALL HISTORY */}
         {panel === "callHistory" && (
-          <CallHistoryPanel />
+          <CallHistoryPanel onStartCall={onStartCall} />
         )}
       </div>
     </div>

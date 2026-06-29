@@ -6,40 +6,22 @@ import useMessages from "../../hooks/useMessages";
 import useChatStore from "../../store/chatStore";
 import useAuthStore from "../../store/authStore";
 import { useSocket } from "../../context/SocketContext";
-import useVideoCall from "../../hooks/useVideoCall";
-import VideoCallComponent from "../VideoCall/VideoCallComponent";
-import IncomingCallComponent from "../VideoCall/IncomingCallComponent";
 
-const ChatWindow = ({ room }) => {
+const ChatWindow = ({ room, callHandlers }) => {
   const socket = useSocket();
   const { user } = useAuthStore();
   const { typingUsers, clearUnread, setRightPanel } = useChatStore();
   const { messages, loadMore, hasMore } = useMessages(room?.id);
   const bottomRef = useRef(null);
   const [autoScroll, setAutoScroll] = useState(true);
+
   const {
-    callState,
-    callDuration,
-    isAudioMuted,
-    isVideoOff,
-    isScreenSharing,
-    incomingCall,
-    localVideoRef,
-    remoteVideoRef,
     startCall,
-    answerCall,
-    endCall,
-    rejectCall,
-    toggleAudio,
-    toggleVideo,
-    startScreenShare,
-    stopScreenShare,
-  } = useVideoCall(socket);
+  } = callHandlers;
 
   const getDMUser = () => room?.members?.find((m) => m.uid !== user?.uid);
   const isDM = room?.type === "dm" || room?.type === "direct" || room?.isDM;
   const dmUser = isDM ? getDMUser() : null;
-
 
   useEffect(() => {
     if (room?.id) {
@@ -65,40 +47,6 @@ const ChatWindow = ({ room }) => {
         onStartVideoCall={() => startCall(dmUser?.uid, true, room.id)}
         onCallHistory={() => setRightPanel("callHistory")}
       />
-
-      {(callState === "connected" || callState === "calling" || callState === "ringing") && (
-        <VideoCallComponent
-          callActive={true}
-          callDuration={callDuration}
-          isAudioMuted={isAudioMuted}
-          isVideoOff={isVideoOff}
-          isScreenSharing={isScreenSharing}
-          localVideoRef={localVideoRef}
-          remoteVideoRef={remoteVideoRef}
-          onToggleAudio={toggleAudio}
-          onToggleVideo={toggleVideo}
-          onStartScreenShare={() => startScreenShare(dmUser?.uid)}
-          onStopScreenShare={() => stopScreenShare(dmUser?.uid)}
-          onEndCall={endCall}
-          remoteUserName={dmUser?.name}
-        />
-      )}
-
-
-      {incomingCall && (
-        <IncomingCallComponent
-          caller={incomingCall.from}
-          callType={incomingCall.callType}
-          onAccept={() => answerCall()}
-          onReject={() => rejectCall(
-            typeof incomingCall.from === 'object' ? incomingCall.from.uid : incomingCall.from,
-            incomingCall.callId,
-            "declined"
-          )}
-        />
-      )}
-
-
 
       <div
         style={{ flex: 1, overflowY: "auto", padding: "0 0 8px 0" }}

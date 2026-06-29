@@ -163,7 +163,7 @@ const MessageInput = ({ room }) => {
           rows={1}
           style={{
             flex: 1, background: "transparent", border: "none", outline: "none",
-            color: "#f1f5f9", fontSize: 14, lineHeight: 1.6, resize: "none",
+            color: "#f1f5f9", fontSize: 16, lineHeight: 1.6, resize: "none",
             fontFamily: "inherit", maxHeight: 120, overflowY: "auto",
           }}
           onInput={(e) => {
@@ -178,7 +178,7 @@ const MessageInput = ({ room }) => {
           disabled={!content.trim() || uploading || !room || !socket}
           style={{
             background: content.trim() && room && socket ? "#6366f1" : "#334155",
-            border: "none", borderRadius: 8, padding: "6px 12px",
+            border: "none", borderRadius: 8, padding: "8px 14px",
             color: "white", cursor: content.trim() && room && socket ? "pointer" : "default",
             fontSize: 16, flexShrink: 0, transition: "background 0.15s",
           }}

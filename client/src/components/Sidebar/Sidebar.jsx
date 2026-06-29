@@ -129,7 +129,7 @@ const Sidebar = () => {
   return (
     <>
       <div style={{
-        width: 280,
+        width: "100%",
         background: "var(--bg-main)",
         borderRight: "1px solid var(--border)",
         display: "flex",

@@ -1,9 +1,7 @@
 import React, { useEffect } from "react";
 import { useCallHistory } from "../../hooks/useCallHistory";
 import useAuthStore from "../../store/authStore";
-import { Phone, PhoneOff, Trash2, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-
 
 const CallHistoryPanel = ({ onStartCall }) => {
   const { token } = useAuthStore();
@@ -20,107 +18,90 @@ const CallHistoryPanel = ({ onStartCall }) => {
   };
 
   const getCallIcon = (type) => {
-    if (type === "video") {
-      return "📹";
-    } else if (type === "audio") {
-      return "🔊";
-    } else if (type === "screen") {
-      return "🖥️";
+    switch (type) {
+      case "video": return "📹";
+      case "audio": return "🔊";
+      case "screen": return "🖥️";
+      default: return "📞";
     }
-    return "📞";
   };
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "completed":
-        return "text-green-400";
-      case "missed":
-        return "text-red-400";
-      case "declined":
-        return "text-yellow-400";
-      default:
-        return "text-slate-400";
+      case "completed": return "#22c55e";
+      case "missed": return "#ef4444";
+      case "declined": return "#f59e0b";
+      default: return "#64748b";
     }
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg shadow-lg">
-      <div className="p-4 border-b border-slate-700">
-        <div className="flex items-center gap-2">
-          <Clock size={20} className="text-blue-400" />
-          <h2 className="text-lg font-bold text-white">Call History</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      {loading ? (
+        <div style={{ textAlign: "center", padding: 24, color: "var(--text-muted)", fontSize: 13 }}>
+          Loading calls...
         </div>
-      </div>
+      ) : callHistory.length === 0 ? (
+        <div style={{ textAlign: "center", padding: 24, color: "var(--text-muted)", fontSize: 13 }}>
+          No call history
+        </div>
+      ) : (
+        callHistory.map((call) => (
+          <div
+            key={call.callId}
+            style={{
+              display: "flex", alignItems: "center", gap: 12, padding: "10px 8px",
+              borderRadius: 12, background: "var(--bg-side)", marginBottom: 4
+            }}
+          >
+            <div style={{ fontSize: 20 }}>{getCallIcon(call.type)}</div>
 
-      <div className="divide-y divide-slate-700">
-        {loading ? (
-          <div className="p-4 text-center text-slate-400 text-sm">
-            Loading...
-          </div>
-        ) : callHistory.length === 0 ? (
-          <div className="p-4 text-center text-slate-400 text-sm">
-            No call history
-          </div>
-        ) : (
-          callHistory.map((call) => (
-            <div
-              key={call.callId}
-              className="p-4 hover:bg-slate-700 transition group flex items-center gap-3"
-            >
-              {/* Call type icon */}
-              <span className="text-2xl">{getCallIcon(call.type)}</span>
-
-              {/* Call info */}
-              <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-semibold text-white truncate">
-                  {call.initiatorDetails?.displayName || "Unknown"}
-                </h3>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-xs ${getStatusColor(call.status)}`}>
-                    {call.status.charAt(0).toUpperCase() + call.status.slice(1)}
-                  </span>
-                  {call.duration > 0 && (
-                    <>
-                      <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-slate-400">
-                        {formatDuration(call.duration)}
-                      </span>
-                    </>
-                  )}
-                  <span className="text-xs text-slate-400">•</span>
-                  <span className="text-xs text-slate-500">
-                    {call.startedAt ? (
-                      formatDistanceToNow(new Date(call.startedAt), { addSuffix: true })
-                    ) : (
-                      "Unknown time"
-                    )}
-                  </span>
-                </div>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text-main)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {call.initiatorDetails?.displayName || "Unknown User"}
               </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
-                <button
-                  onClick={() =>
-                    onStartCall?.(call.initiatorDetails?.uid, call.type === "video")
-                  }
-                  className="p-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition"
-                  title="Call back"
-                >
-                  <Phone size={16} />
-                </button>
-                <button
-                  onClick={() => deleteCallRecord(call.callId)}
-                  className="p-2 rounded-lg bg-slate-700 hover:bg-red-600 text-slate-400 hover:text-white transition"
-                  title="Delete"
-                >
-                  <Trash2 size={16} />
-                </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: getStatusColor(call.status), textTransform: "capitalize" }}>
+                  {call.status}
+                </span>
+                {call.duration > 0 && (
+                  <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                    • {formatDuration(call.duration)}
+                  </span>
+                )}
+                <span style={{ fontSize: 11, color: "var(--text-muted)" }}>
+                  • {call.startedAt ? formatDistanceToNow(new Date(call.startedAt), { addSuffix: true }) : "Unknown"}
+                </span>
               </div>
             </div>
-          ))
-        )}
-      </div>
+
+            <div style={{ display: "flex", gap: 4 }}>
+              <button
+                onClick={() => onStartCall?.(call.initiatorDetails?.uid, call.type === "video")}
+                style={{
+                  background: "var(--primary)", border: "none", borderRadius: 8,
+                  width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "white", cursor: "pointer", fontSize: 14
+                }}
+                title="Call back"
+              >
+                📞
+              </button>
+              <button
+                onClick={() => deleteCallRecord(call.callId)}
+                style={{
+                  background: "transparent", border: "none", borderRadius: 8,
+                  width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center",
+                  color: "#ef4444", cursor: "pointer", fontSize: 14
+                }}
+                title="Delete"
+              >
+                🗑
+              </button>
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 };

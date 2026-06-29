@@ -3,8 +3,9 @@ import useChatStore from "../../store/chatStore";
 import useAuthStore from "../../store/authStore";
 
 const ChatHeader = ({ room, onStartAudioCall, onStartVideoCall, onCallHistory }) => {
-  const { toggleSidebar, setRightPanel, rightPanel, onlineUsers } = useChatStore();
+  const { toggleSidebar, setRightPanel, rightPanel, onlineUsers, setActiveRoom } = useChatStore();
   const { user } = useAuthStore();
+  const isMobile = window.innerWidth < 768;
 
   if (!room) return null;
 
@@ -28,12 +29,12 @@ const ChatHeader = ({ room, onStartAudioCall, onStartVideoCall, onCallHistory })
       background: "#0f172a",
       zIndex: 10,
     }}>
-      {/* Hamburger */}
+      {/* Back button on mobile, Hamburger on Desktop */}
       <button
-        onClick={toggleSidebar}
+        onClick={() => isMobile ? setActiveRoom(null) : toggleSidebar()}
         style={{ background: "transparent", border: "none", color: "#94a3b8", cursor: "pointer", fontSize: 20, padding: 4 }}
       >
-        ☰
+        {isMobile ? "←" : "☰"}
       </button>
 
       {/* Room info */}
