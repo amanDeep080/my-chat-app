@@ -6,14 +6,38 @@ const api = axios.create({
   timeout: 15000,
 });
 
+// Helper to get token with a small wait if Firebase is still initializing
+const getAuthToken = () => {
+  return new Promise((resolve) => {
+    // If user is already available, get token immediately
+    if (auth.currentUser) {
+      resolve(auth.currentUser.getIdToken());
+      return;
+    }
+
+    // Otherwise, wait once for the state to change (max 2 seconds)
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      unsubscribe();
+      if (user) {
+        resolve(await user.getIdToken());
+      } else {
+        resolve(null);
+      }
+    });
+
+    // Timeout safety
+    setTimeout(() => {
+      unsubscribe();
+      resolve(null);
+    }, 2000);
+  });
+};
+
 // Auto-attach Firebase token
 api.interceptors.request.use(async (config) => {
-  // Use Firebase SDK directly to get the token.
-  // This breaks the circular dependency with authStore.
   try {
-    const currentUser = auth.currentUser;
-    if (currentUser) {
-      const token = await currentUser.getIdToken();
+    const token = await getAuthToken();
+    if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (err) {
@@ -35,7 +59,10 @@ api.interceptors.response.use(
           return api.request(error.config);
         }
       } catch {
-        window.location.href = "/login";
+        // Only redirect if we are not already on login/register
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+          window.location.href = "/login";
+        }
       }
     }
     return Promise.reject(error);
