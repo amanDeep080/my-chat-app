@@ -25,7 +25,10 @@ const { cleanupInactiveUsers } = require("./services/presence");
 const { cleanupExpiredFiles } = require("./services/fileStorage");
 
 const app = express();
+// Trust Render's proxy for rate limiting
+app.set("trust proxy", 1);
 const server = http.createServer(app);
+
 
 
 
