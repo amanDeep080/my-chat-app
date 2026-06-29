@@ -1,6 +1,5 @@
 import axios from "axios";
 import { auth } from "../firebase/config";
-import useAuthStore from "../store/authStore";
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || "/api",
@@ -9,26 +8,25 @@ const api = axios.create({
 
 // Auto-attach Firebase token
 api.interceptors.request.use(async (config) => {
-  // Try to get token from store first (faster)
-  let token = useAuthStore.getState().token;
-
-  if (!token && auth.currentUser) {
-    token = await auth.currentUser.getIdToken();
-  }
-
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // Use Firebase SDK directly to get the token.
+  // This breaks the circular dependency with authStore.
+  try {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const token = await currentUser.getIdToken();
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (err) {
+    console.error("Token attachment error:", err);
   }
   return config;
 });
-
 
 // Handle auth errors
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
     if (error.response?.status === 401) {
-      // Token expired — refresh and retry once
       try {
         const currentUser = auth.currentUser;
         if (currentUser) {
