@@ -86,7 +86,7 @@ const Sidebar = () => {
   const { rooms, activeRoom, setActiveRoom, unreadCounts, clearUnread, onlineUsers } = useChatStore();
   const { user, logout } = useAuthStore();
   const [search, setSearch] = useState("");
-  const [tab, setTab] = useState("rooms"); // rooms | dms | search_users
+  const [tab, setTab] = useState("rooms");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const { setUserStatus } = usePresence();
