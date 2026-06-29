@@ -15,13 +15,8 @@ const RightPanel = ({ room, panel }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [pinnedMessages, setPinnedMessages] = useState([]);
 
-  useEffect(() => {
-    if (panel === "pinned" && room?.pinnedMessages?.length > 0) {
-      fetchPinned();
-    }
-  }, [panel, room]);
-
-  const fetchPinned = async () => {
+  const fetchPinned = React.useCallback(async () => {
+    if (!room?.pinnedMessages) return;
     try {
       const results = await Promise.all(
         room.pinnedMessages.map((id) => api.get(`/messages/${id}`).then((r) => r.data.message))
@@ -30,7 +25,13 @@ const RightPanel = ({ room, panel }) => {
     } catch (err) {
       console.error("Failed to fetch pinned messages:", err);
     }
-  };
+  }, [room?.pinnedMessages]);
+
+  useEffect(() => {
+    if (panel === "pinned" && room?.pinnedMessages?.length > 0) {
+      fetchPinned();
+    }
+  }, [panel, room?.id, fetchPinned]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -262,6 +263,11 @@ const RightPanel = ({ room, panel }) => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* CALL HISTORY */}
+        {panel === "callHistory" && (
+          <CallHistoryPanel />
         )}
       </div>
     </div>

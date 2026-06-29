@@ -101,6 +101,12 @@ const useVideoCall = (socket) => {
     });
   }, [socket, remoteUid, createPeerConnection]);
 
+  const rejectCall = useCallback((from, newCallId, reason = "declined") => {
+    socket?.emit("call:reject", { targetUid: from, callId: newCallId, reason });
+    setIncomingCall(null);
+    setCallState("idle");
+  }, [socket]);
+
   const answerCall = useCallback(async () => {
     if (!incomingCall) return;
     const { from, callId: newCallId, callType } = incomingCall;
@@ -189,12 +195,6 @@ const useVideoCall = (socket) => {
     setIncomingCall(null);
     setIsScreenSharing(false);
   }, [socket, remoteUid, callId, callDuration]);
-
-  const rejectCall = useCallback((from, newCallId, reason = "declined") => {
-    socket?.emit("call:reject", { targetUid: from, callId: newCallId, reason });
-    setIncomingCall(null);
-    setCallState("idle");
-  }, [socket]);
 
   const toggleAudio = useCallback(() => {
     if (localStreamRef.current) {

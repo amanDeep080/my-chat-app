@@ -15,6 +15,7 @@ const ChatPage = () => {
   const socket = useSocket();
 
   useEffect(() => {
+    if (!user) return;
     const fetchRooms = async () => {
       try {
         const { data } = await api.get("/rooms/my-rooms");
@@ -24,7 +25,7 @@ const ChatPage = () => {
       }
     };
     fetchRooms();
-  }, []);
+  }, [user, setRooms]);
 
   useEffect(() => {
     if (rooms.length > 0 && socket) {
