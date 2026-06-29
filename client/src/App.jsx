@@ -49,54 +49,54 @@ function App() {
     });
 
     return () => unsub();
-  }, []);
+  }, [setUser, setToken, setLoading]);
 
   return (
     <BrowserRouter>
       <ThemeProvider>
         <LanguageProvider>
           <SocketProvider>
-          <div className="app">
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/room/:roomId"
-              element={
-                <ProtectedRoute>
-                  <ChatPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+            <div className="app">
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <ChatPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/room/:roomId"
+                  element={
+                    <ProtectedRoute>
+                      <ChatPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/profile"
+                  element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
 
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: { background: "#1e293b", color: "#f1f5f9", border: "1px solid #334155" },
-              duration: 3000,
-            }}
-          />
-        </div>
-      </SocketProvider>
-      </LanguageProvider>
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  style: { background: "#1e293b", color: "#f1f5f9", border: "1px solid #334155" },
+                  duration: 3000,
+                }}
+              />
+            </div>
+          </SocketProvider>
+        </LanguageProvider>
       </ThemeProvider>
     </BrowserRouter>
   );

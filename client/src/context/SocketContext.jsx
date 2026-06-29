@@ -3,7 +3,6 @@ import { io } from "socket.io-client";
 import { auth } from "../firebase/config";
 import useChatStore from "../store/chatStore";
 import useAuthStore from "../store/authStore";
-import toast from "react-hot-toast";
 
 const SocketContext = createContext(null);
 
@@ -11,10 +10,6 @@ export const SocketProvider = ({ children }) => {
   const socketRef = useRef(null);
   const [socket, setSocket] = useState(null);
   const { token } = useAuthStore();
-  const {
-    addMessage, updateMessage, removeMessage,
-    setTypingUsers, updatePresence, addRoom, updateRoom,
-  } = useChatStore();
 
   useEffect(() => {
     if (!token) return;
@@ -43,58 +38,53 @@ export const SocketProvider = ({ children }) => {
         console.log("🔴 Socket disconnected");
       });
 
-      newSocket.on("connect_error", (err) => {
-        console.error("Socket connection error:", err.message);
-      });
-
       newSocket.on("message:new", (message) => {
+        const { addMessage, updateRoom } = useChatStore.getState();
         addMessage(message.roomId, message);
-        updateRoom(message.roomId, { lastMessage: { content: message.content, senderId: message.senderId, createdAt: message.createdAt } });
+        updateRoom(message.roomId, {
+          lastMessage: {
+            content: message.content,
+            senderId: message.senderId,
+            createdAt: message.createdAt
+          }
+        });
       });
 
-      newSocket.on("message:updated", ({ messageId, ...updates }) => {
-        const { messages } = useChatStore.getState();
+      newSocket.on("message:updated", ({ messageId, content, edited }) => {
+        const { messages, updateMessage } = useChatStore.getState();
         for (const roomId in messages) {
           const found = messages[roomId]?.find((m) => m.id === messageId);
-          if (found) { updateMessage(roomId, messageId, updates); break; }
+          if (found) {
+            updateMessage(roomId, messageId, { content, edited });
+            break;
+          }
         }
       });
 
       newSocket.on("message:deleted", ({ messageId, roomId }) => {
+        const { removeMessage } = useChatStore.getState();
         removeMessage(roomId, messageId);
       });
 
       newSocket.on("message:reaction_updated", ({ messageId, reactions }) => {
-        const { messages } = useChatStore.getState();
+        const { messages, updateMessage } = useChatStore.getState();
         for (const roomId in messages) {
           const found = messages[roomId]?.find((m) => m.id === messageId);
-          if (found) { updateMessage(roomId, messageId, { reactions }); break; }
+          if (found) {
+            updateMessage(roomId, messageId, { reactions });
+            break;
+          }
         }
       });
 
       newSocket.on("typing:update", ({ roomId, typingUsers }) => {
+        const { setTypingUsers } = useChatStore.getState();
         setTypingUsers(roomId, typingUsers);
       });
 
       newSocket.on("user:presence", ({ uid, status, lastSeen }) => {
+        const { updatePresence } = useChatStore.getState();
         updatePresence(uid, { status, lastSeen });
-      });
-
-      newSocket.on("call:offer", ({ from, offer, roomId }) => {
-        window.dispatchEvent(new CustomEvent("call:incoming", { detail: { from, offer, roomId } }));
-      });
-
-      newSocket.on("call:answer", ({ from, answer }) => {
-        window.dispatchEvent(new CustomEvent("call:answer", { detail: { from, answer } }));
-      });
-
-      newSocket.on("call:ice_candidate", ({ from, candidate }) => {
-        window.dispatchEvent(new CustomEvent("call:ice_candidate", { detail: { from, candidate } }));
-      });
-
-      newSocket.on("call:ended", ({ from }) => {
-        window.dispatchEvent(new CustomEvent("call:ended", { detail: { from } }));
-        toast("Call ended");
       });
     };
 
